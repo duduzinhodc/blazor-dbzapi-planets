@@ -1,0 +1,84 @@
+﻿@page "/planets"
+@using ConsumerDbzPlanet.Models
+@inject HttpClient Http
+
+<h3>Planetas de Dragon Ball [cite: 35, 46]</h3>
+<p>Digite o ID de um planeta e pressione Enter para buscar suas informações. [cite: 36, 52]</p>
+
+<div class="input-group mb-3">
+   
+    <input type="number" @bind-value="PlanetIdInput" class="form-control" placeholder="Digite o ID" />
+    <button class="btn btn-primary" @onclick="SearchPlanets">Buscar [cite: 47, 55]</button>
+</div>
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="alert alert-warning">
+        @Message
+    </div>
+}
+
+@if (Planet != null)
+{
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">@Planet.Name [cite: 57]</h5>
+            
+            @if (!string.IsNullOrEmpty(Planet.Image))
+            {
+               
+                <img src="@Planet.Image" class="img-fluid mb-3" alt="Imagem do planeta @Planet.Name" style="max-width: 300px;" />
+            }
+
+            <p><strong>Status:</strong> @Planet.Status [cite: 58]</p>
+            <p><strong>Descrição:</strong> @Planet.Description [cite: 59]</p>
+        </div>
+    </div>
+}
+
+
+@code {
+    private PlanetModel? Planet;
+    private string? PlanetIdInput { get; set; } 
+    private string? Message;
+    private const string BaseUrl = "https://dragonball-api.com/api/planets/"; 
+
+    private async Task SearchPlanets()
+    {
+        Planet = null; 
+        Message = null; 
+
+        
+        if (string.IsNullOrWhiteSpace(PlanetIdInput) || !int.TryParse(PlanetIdInput, out var id) || id <= 0)
+        {
+            Message = "Por favor, informe um ID válido e positivo.";
+            return;
+        }
+
+        
+        try
+        {
+            var url = $"{BaseUrl}{id}"; 
+
+            
+            Planet = await Http.GetFromJsonAsync<PlanetModel>(url);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+              Message = "Planeta não encontrado ou ID inválido."; 
+        }
+        catch (HttpRequestException)
+        {           
+            Message = "Erro de conexão com a API. Verifique sua conexão.";
+        }
+        catch (System.Text.Json.JsonException)
+        { 
+            Message = "Erro ao processar a resposta da API (formato de dados inválido).";
+        }
+        catch (Exception)
+        {
+            Message = "Ocorreu um erro inesperado durante a busca.";
+        }
+    }
+}
+}
